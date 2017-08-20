@@ -103,6 +103,7 @@ def eulers_phi_function(p, q):
 def extended_euclidean_algorithm(x, y):
     """
        Term "old" referring to one iteration previous to current
+       as in: s_{-1}, s,..
     """
     s = 0
     old_s = 1
@@ -133,10 +134,10 @@ def findPrime(digits):
     while not valid:
         # generate a large number from desired length {lower, lower+1,..upper }
         num = random.randint(lower, upper)
-        print("Number tested is: %d" % num)
+        # print("Number tested is: %d" % num)
 
         if is_prime(num):
-            print("Number is a PRIME\n")
+            print("Found a PRIME:\n%d" % num)
             valid = True
         else:
             pass
@@ -175,8 +176,7 @@ def is_prime(n):
 
 def primalityTest(n):
     """" Miller-Tabin Primality test
-         a^(2^s) = a^r = 1 (mod n)
-
+         a^(2^s) = a^r =/ 1 (mod n)
          s will be divided until odd, acting for value 'q' = s
          'v' will take the place of a^q
 

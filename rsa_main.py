@@ -26,6 +26,8 @@ Notes:
     - August 15th:
         - Implement input from file
         - Fix handle_exponent()
+        - Working on segmenting input to avoid overflow.
+            - Now input is separated into elements and encrypted/decrypted individually
 
     ref:
         textbook: "Understanding Cryptography : A Textbook for Students and Practitioners" Christof Paar
@@ -41,21 +43,28 @@ from rsa_functions import bit_list_to_string, string_to_bits, convert_to_bits,\
     seq_to_bits, pad_bits, bits_to_string, findPrime, extended_euclidean_algorithm,\
     handle_exponent, primalityTest, eulers_phi_function, encrypt, decrypt
 
+# ---------------------------------------------------------------------------
+# Read File: Read in file and assign segments of text into different elements
+# ---------------------------------------------------------------------------
+data = []
+
+with open('rsa_input.txt') as f:
+    for line in f:
+        data.append(line)
+# data = [x.strip('\n') for x in data]
+
 # ----------------------------------------------------------------------
 # Setup: Convert message to: ascii characters -> binary -> decimal value
 # ----------------------------------------------------------------------
-plaintext = raw_input('Write your message: ')
 
-binary_array = string_to_bits(plaintext)
-binary_string = bit_list_to_string(binary_array)
-plaintext_dec = int(binary_string, 2)
+data_dec = []
+for element in data:
+    binary_array = string_to_bits(element)
+    binary_string = bit_list_to_string(binary_array)
+    data_dec.append(int(binary_string, 2))
 
 
-print ("\nEncrypting message >> %s <<" % plaintext)
-
-print ("Plaintext binary representation >> %s <<" % binary_string)
-
-print ("Decimal representation >> %s <<\n" % plaintext_dec)
+print ("\nEncrypting message >>  <<")
 
 
 RSA_complete = False
@@ -64,7 +73,11 @@ while not RSA_complete:
     # Key Generation: Select two prime numbers, totient, and encryption value 'e'
     # ---------------------------------------------------------------------------
 
-    digit_size = len(str(plaintext_dec))
+    """
+    Rather than finding a prime based off of each data line, take the first line as 
+    an indicator of what is required. Doesn't seem to have negative effect on end product
+    """
+    digit_size = len(str(data_dec[0]))
 
     validPrimes = False
     while not validPrimes:
@@ -76,7 +89,7 @@ while not RSA_complete:
         # Primes p and q are tested for being co-primes
         if gcd(p, q) == 1:
             validPrimes = True
-        if (n-1) < plaintext_dec:
+        if (n-1) < data_dec[0]:
             # increase digit size by one? Maybe enough
             print("Plaintext decimal value is greater than n-1: ERROR")
             validPrimes = False
@@ -94,7 +107,7 @@ while not RSA_complete:
             validE = True
 
     """ From e selection, with tests applied, we assume e has inverse d.
-                   fine d by running EEA on value e """
+                   find d by running EEA on values (phi_n, e) """
 
     eea_results = extended_euclidean_algorithm(phi_n, e)
     d = eea_results[1]   # Assigns second value calculated by EEA to d
@@ -111,24 +124,35 @@ while not RSA_complete:
     print("d = %d\n" % d)
 
     # ---------------------------------
-    # Encryption = x^e (mod n)
+    # Encryption: y = x^e (mod n)
     # ---------------------------------
 
-    #ciphertext = encrypt(plaintext_dec, e, n)
-    ciphertext = pow(plaintext_dec, e, n)
+    data_encrypted = []
+    for element in data_dec:
+        data_encrypted.append(pow(element, e, n))
 
-    print ("Encrypted message is >> %s <<" % ciphertext)
-    # ---------------------------
-    # Decryption = y^d (mod n)
-    # ---------------------------
+    # ---------------------------------
+    # Decryption:  x = y^d (mod n)
+    # ---------------------------------
 
     #plaintext_dec = decrypt(ciphertext, d, n)
-    plaintext_dec = pow(ciphertext, d, n)
+    data_decrypted = []
+    for element in data_encrypted:
+        data_decrypted.append(pow(element, d, n))
 
     RSA_complete = True  # indicates RSA has concluded
 
-bitSeq = seq_to_bits(bin(plaintext_dec)[2:])  # [2:] is needed to get rid of 0b in front
-paddedString = pad_bits(bitSeq, len(bitSeq) + (8 - (len(bitSeq) % 8)))  # Need to pad because conversion from dec to bin throws away MSB's
-outputString = bits_to_string(paddedString)
 
-print ("Decrypted message is >> %s <<" % outputString)
+data_output = []
+for element in data_decrypted:
+    bitSeq = seq_to_bits(bin(element)[2:])  # [2:] is needed to get rid of 0b in front
+    paddedString = pad_bits(bitSeq, len(bitSeq) + (8 - (len(bitSeq) % 8)))  # Need to pad because conversion from dec to bin throws away MSB's
+    data_output.append(bits_to_string(paddedString))
+
+output_file = open("rsa_output.txt", "w")
+for element in data_output:
+    output_file.write(element)
+
+# Uncomment to print to console instead
+#for element in data_output:
+#    print ("Decrypted message is >> %s <<" % element)
